@@ -1,0 +1,1 @@
+bucket_name = "fitness-app-123456-unique"
