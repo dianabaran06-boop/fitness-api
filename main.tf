@@ -1,3 +1,8 @@
+
+########################################
+# IAM ASSUME ROLE
+########################################
+
 locals {
   assume = jsonencode({
     Version = "2012-10-17",
@@ -9,8 +14,10 @@ locals {
   })
 }
 
-# ROLES + POLICIES
-# -------- TRAINERS --------
+########################################
+# TRAINERS ROLE
+########################################
+
 resource "aws_iam_role" "trainers_role" {
   name               = "trainers-role"
   assume_role_policy = local.assume
@@ -23,13 +30,24 @@ resource "aws_iam_role_policy" "trainers_policy" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      { Effect = "Allow", Action = ["logs:*"], Resource = "*" },
-      { Effect = "Allow", Action = ["dynamodb:Scan"], Resource = data.aws_dynamodb_table.trainers.arn }
+      {
+        Effect = "Allow",
+        Action = ["logs:*"],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = ["dynamodb:Scan"],
+        Resource = data.aws_dynamodb_table.trainers.arn
+      }
     ]
   })
 }
 
-# -------- WORKOUTS --------
+########################################
+# WORKOUTS ROLE
+########################################
+
 resource "aws_iam_role" "workouts_role" {
   name               = "workouts-role"
   assume_role_policy = local.assume
@@ -42,19 +60,32 @@ resource "aws_iam_role_policy" "workouts_policy" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      { Effect = "Allow", Action = ["logs:*"], Resource = "*" },
-      { Effect = "Allow", Action = ["dynamodb:*"], Resource = data.aws_dynamodb_table.workouts.arn }
+      {
+        Effect = "Allow",
+        Action = ["logs:*"],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = ["dynamodb:*"],
+        Resource = data.aws_dynamodb_table.workouts.arn
+      }
     ]
   })
 }
 
-
-# LAMBDA FUNCTIONS
+########################################
+# LAMBDA RUNTIME
+########################################
 
 locals {
   runtime = "nodejs18.x"
 }
-# --- GET ALL TRAINERS ---
+
+########################################
+# LAMBDA FUNCTIONS
+########################################
+
 resource "aws_lambda_function" "get_trainers" {
   function_name = "get-trainers"
   role          = aws_iam_role.trainers_role.arn
@@ -69,7 +100,6 @@ resource "aws_lambda_function" "get_trainers" {
   }
 }
 
-# --- GET ALL WORKOUTS ---
 resource "aws_lambda_function" "get_workouts" {
   function_name = "get-workouts"
   role          = aws_iam_role.workouts_role.arn
@@ -84,7 +114,6 @@ resource "aws_lambda_function" "get_workouts" {
   }
 }
 
-# --- GET WORKOUT BY ID ---
 resource "aws_lambda_function" "get_workout" {
   function_name = "get-workout"
   role          = aws_iam_role.workouts_role.arn
@@ -99,7 +128,6 @@ resource "aws_lambda_function" "get_workout" {
   }
 }
 
-# --- SAVE WORKOUT ---
 resource "aws_lambda_function" "save_workout" {
   function_name = "save-workout"
   role          = aws_iam_role.workouts_role.arn
@@ -114,7 +142,6 @@ resource "aws_lambda_function" "save_workout" {
   }
 }
 
-# --- UPDATE WORKOUT ---
 resource "aws_lambda_function" "update_workout" {
   function_name = "update-workout"
   role          = aws_iam_role.workouts_role.arn
@@ -129,7 +156,6 @@ resource "aws_lambda_function" "update_workout" {
   }
 }
 
-# --- DELETE WORKOUT ---
 resource "aws_lambda_function" "delete_workout" {
   function_name = "delete-workout"
   role          = aws_iam_role.workouts_role.arn
@@ -144,13 +170,18 @@ resource "aws_lambda_function" "delete_workout" {
   }
 }
 
+########################################
 # API GATEWAY
+########################################
 
 resource "aws_api_gateway_rest_api" "api" {
   name = "fitness-api"
 }
 
+########################################
 # RESOURCES
+########################################
+
 resource "aws_api_gateway_resource" "workouts" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
@@ -169,9 +200,10 @@ resource "aws_api_gateway_resource" "trainers" {
   path_part   = "trainers"
 }
 
-
-# METHODS + INTEGRATIONS
+########################################
 # GET /workouts
+########################################
+
 resource "aws_api_gateway_method" "get_workouts" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.workouts.id
@@ -196,7 +228,10 @@ resource "aws_lambda_permission" "get_workouts" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
+########################################
 # POST /workouts
+########################################
+
 resource "aws_api_gateway_method" "post_workouts" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.workouts.id
@@ -221,7 +256,10 @@ resource "aws_lambda_permission" "post_workouts" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
+########################################
 # GET /trainers
+########################################
+
 resource "aws_api_gateway_method" "get_trainers" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.trainers.id
@@ -246,7 +284,10 @@ resource "aws_lambda_permission" "get_trainers" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
+########################################
 # GET /workouts/{id}
+########################################
+
 resource "aws_api_gateway_method" "get_workout" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.workout_id.id
@@ -271,7 +312,10 @@ resource "aws_lambda_permission" "get_workout" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
+########################################
 # PUT /workouts/{id}
+########################################
+
 resource "aws_api_gateway_method" "put_workout" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.workout_id.id
@@ -296,7 +340,10 @@ resource "aws_lambda_permission" "put_workout" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
+########################################
 # DELETE /workouts/{id}
+########################################
+
 resource "aws_api_gateway_method" "delete_workout" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.workout_id.id
@@ -321,7 +368,10 @@ resource "aws_lambda_permission" "delete_workout" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
-# DEPLOY + STAGE
+########################################
+# DEPLOYMENT + STAGE
+########################################
+
 resource "aws_api_gateway_deployment" "deploy" {
   depends_on = [
     aws_api_gateway_integration.get_workouts,
@@ -341,14 +391,14 @@ resource "aws_api_gateway_stage" "dev" {
   deployment_id = aws_api_gateway_deployment.deploy.id
 }
 
-# =========================
-# S3 BUCKET (FRONTEND)
-# =========================
+########################################
+# S3 FRONTEND
+########################################
+
 resource "aws_s3_bucket" "frontend" {
   bucket = var.bucket_name
 }
 
-# Вимикаємо блокування публічного доступу
 resource "aws_s3_bucket_public_access_block" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -358,7 +408,6 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = false
 }
 
-# Включаємо static website hosting
 resource "aws_s3_bucket_website_configuration" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -371,7 +420,6 @@ resource "aws_s3_bucket_website_configuration" "frontend" {
   }
 }
 
-# Політика доступу (щоб сайт відкривався)
 resource "aws_s3_bucket_policy" "frontend_policy" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -379,20 +427,19 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = "*",
-        Action = ["s3:GetObject"],
-        Resource = "${aws_s3_bucket.frontend.arn}/*"
-      }
-    ]
+    Statement = [{
+      Effect = "Allow",
+      Principal = "*",
+      Action = ["s3:GetObject"],
+      Resource = "${aws_s3_bucket.frontend.arn}/*"
+    }]
   })
 }
 
-# =========================
-# OUTPUT (URL сайту)
-# =========================
+########################################
+# OUTPUT
+########################################
+
 output "frontend_url" {
   value = aws_s3_bucket_website_configuration.frontend.website_endpoint
 }

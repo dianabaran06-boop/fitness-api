@@ -23,5 +23,6 @@
   "bugs": {
     "url": "https://github.com/dianabaran06-boop/fitness-api/issues"
   },
-  "homepage": "https://github.com/dianabaran06-boop/fitness-api#readme"
+  "homepage": "https://github.com/dianabaran06-boop/fitness-api#readme",
+  "devDependencies": {}
 }
